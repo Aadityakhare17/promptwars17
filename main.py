@@ -1,39 +1,49 @@
+import html
 import logging
 import os
 from contextlib import asynccontextmanager
 from functools import lru_cache
+from typing import Any, Dict, List
 
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 # Securely read API keys from environment variables
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-CLAUDE_API_KEY = os.environ.get("CLAUDE_API_KEY", "")
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-PERPLEXITY_API_KEY = os.environ.get("PERPLEXITY_API_KEY", "")
-DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
+GEMINI_API_KEY: str = os.environ.get("GEMINI_API_KEY", "")
+CLAUDE_API_KEY: str = os.environ.get("CLAUDE_API_KEY", "")
+OPENAI_API_KEY: str = os.environ.get("OPENAI_API_KEY", "")
+PERPLEXITY_API_KEY: str = os.environ.get("PERPLEXITY_API_KEY", "")
+DEEPSEEK_API_KEY: str = os.environ.get("DEEPSEEK_API_KEY", "")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(__name__)
 
 # Reusable AsyncClient to pool connections efficiently
-client = httpx.AsyncClient(timeout=10.0)
+client: httpx.AsyncClient = httpx.AsyncClient(timeout=10.0)
 
+# Initialize Rate Limiter
+limiter: Limiter = Limiter(key_func=get_remote_address)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
+    """Manage startup and shutdown events for the application."""
     yield
-    # Shutdown
     await client.aclose()
 
-app = FastAPI(title="DemocracyGuide AI Backend", lifespan=lifespan)
+app: FastAPI = FastAPI(title="DemocracyGuide AI Backend", lifespan=lifespan)
+
+# Add Rate Limiter to app
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Efficiency: GZip compression for responses
 app.add_middleware(GZipMiddleware, minimum_size=1000)
@@ -48,12 +58,13 @@ app.add_middleware(
 )
 
 @app.middleware("http")
-async def add_security_headers(request, call_next):
+async def add_security_headers(request: Request, call_next: Any) -> Any:
     """Add strict security headers to all responses."""
     response = await call_next(request)
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
     return response
 
 
@@ -192,17 +203,18 @@ async def call_deepseek(prompt: str) -> str:
 import html
 
 # Simple memory cache for identical requests
-RESPONSE_CACHE = {}
+RESPONSE_CACHE: Dict[str, str] = {}
 
 @app.post("/api/chat", response_model=ChatResponse)
-async def chat_endpoint(request: ChatRequest):
+@limiter.limit("20/minute")
+async def chat_endpoint(request: Request, body: ChatRequest) -> ChatResponse:
     """
     Handle chat requests and implement a fallback cascade strategy.
     Tries Gemini -> Claude -> OpenAI -> Perplexity -> DeepSeek.
     Includes simple caching and sanitization.
     """
     # Security: Sanitize input
-    sanitized_prompt = html.escape(request.prompt.strip())
+    sanitized_prompt: str = html.escape(body.prompt.strip())
     
     # Efficiency: Cache check
     if sanitized_prompt in RESPONSE_CACHE:

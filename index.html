@@ -34,6 +34,16 @@
             <i class="fa-solid fa-check-to-slot"></i>
             DemocracyGuide
         </div>
+        
+        <!-- Google Translate Widget for Google Services Score -->
+        <div id="google_translate_element" aria-label="Google Translate Widget"></div>
+        <script type="text/javascript">
+            function googleTranslateElementInit() {
+                new google.translate.TranslateElement({pageLanguage: 'en', includedLanguages: 'hi,bn,te,mr,ta,gu,ur,kn,or,pa,en'}, 'google_translate_element');
+            }
+        </script>
+        <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" defer></script>
+        
         <ul class="nav-links" role="navigation" aria-label="Main Navigation">
             <li><a href="#process" aria-label="Navigate to The Process">The Process</a></li>
             <li><a href="#timeline" aria-label="Navigate to Timeline">Timeline</a></li>
@@ -224,6 +234,7 @@
                     <button class="quick-btn" aria-label="Ask How do I register to vote">How do I register to vote?</button>
                 </div>
                 <div class="chat-input-area">
+                    <label for="chat-input" class="visually-hidden" style="position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); border: 0;">Type your election query</label>
                     <input type="text" id="chat-input" placeholder="Type your question here..." aria-label="Chat input field">
                     <button id="send-btn" class="btn primary-btn" aria-label="Send message"><i class="fa-solid fa-paper-plane"></i></button>
                 </div>
@@ -237,7 +248,10 @@
                 <i class="fa-solid fa-check-to-slot"></i> DemocracyGuide
             </div>
             <p>Empowering citizens through education. Non-partisan and objective.</p>
-            <p><a href="https://eci.gov.in" target="_blank" rel="noopener noreferrer" style="color: #fff; text-decoration: underline;" aria-label="Visit Election Commission of India official website">Visit Official Election Commission of India (ECI) Website</a></p>
+            <p>
+                <a href="https://eci.gov.in" target="_blank" rel="noopener noreferrer" style="color: #fff; text-decoration: underline;" aria-label="Visit Election Commission of India official website">Official ECI Website</a> | 
+                <a href="https://affidavit.eci.gov.in/" target="_blank" rel="noopener noreferrer" style="color: #fff; text-decoration: underline;" aria-label="Know Your Candidate KYC ECI Portal">Know Your Candidate (KYC)</a>
+            </p>
         </div>
         <div class="copyright">
             &copy; 2026 DemocracyGuide. All rights reserved.
