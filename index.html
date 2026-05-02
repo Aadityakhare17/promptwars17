@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; connect-src 'self' http://127.0.0.1:8000;">
+    <meta name="description" content="DemocracyGuide - An interactive Indian Election Assistant.">
     <title>Democracy Guide | Election Assistant</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -22,11 +24,11 @@
             <i class="fa-solid fa-check-to-slot"></i>
             DemocracyGuide
         </div>
-        <ul class="nav-links">
-            <li><a href="#process">The Process</a></li>
-            <li><a href="#timeline">Timeline</a></li>
-            <li><a href="#flashcards">Flashcards</a></li>
-            <li><a href="#assistant">AI Assistant</a></li>
+        <ul class="nav-links" role="navigation" aria-label="Main Navigation">
+            <li><a href="#process" aria-label="Navigate to The Process">The Process</a></li>
+            <li><a href="#timeline" aria-label="Navigate to Timeline">Timeline</a></li>
+            <li><a href="#flashcards" aria-label="Navigate to Flashcards">Flashcards</a></li>
+            <li><a href="#assistant" aria-label="Navigate to AI Assistant">AI Assistant</a></li>
         </ul>
     </nav>
 
@@ -41,7 +43,7 @@
                 <i class="fa-solid fa-box-archive"></i>
                 <h3>Ballot Ready</h3>
                 <p>Are you registered to vote?</p>
-                <button class="btn secondary-btn check-status-btn">Check Status</button>
+                <button class="btn secondary-btn check-status-btn" aria-label="Check voter registration status">Check Status</button>
             </div>
         </div>
     </header>
@@ -183,9 +185,9 @@
                 </div>
             </div>
             
-            <div class="flashcard-controls">
-                <button class="btn secondary-btn" id="prev-card">Previous</button>
-                <button class="btn secondary-btn" id="next-card">Next</button>
+            <div class="flashcard-controls" aria-label="Flashcard Controls">
+                <button class="btn secondary-btn" id="prev-card" aria-label="Previous Flashcard">Previous</button>
+                <button class="btn secondary-btn" id="next-card" aria-label="Next Flashcard">Next</button>
             </div>
         </section>
 
@@ -200,20 +202,20 @@
                         <p>Ask me anything about voting!</p>
                     </div>
                 </div>
-                <div class="chat-window" id="chat-window">
+                <div class="chat-window" id="chat-window" role="log" aria-live="polite" aria-label="Chat messages">
                     <div class="message bot-message">
                         Namaste! I'm your Indian Election Guide Assistant. I can help you understand voter registration, Lok Sabha seats, political parties, the PM, President, and more. What would you like to know?
                     </div>
                 </div>
-                <div class="quick-questions">
-                    <button class="quick-btn">Who is the Prime Minister?</button>
-                    <button class="quick-btn">How many seats in Lok Sabha?</button>
-                    <button class="quick-btn">What are the major political parties?</button>
-                    <button class="quick-btn">How do I register to vote?</button>
+                <div class="quick-questions" aria-label="Quick questions">
+                    <button class="quick-btn" aria-label="Ask Who is the Prime Minister">Who is the Prime Minister?</button>
+                    <button class="quick-btn" aria-label="Ask How many seats in Lok Sabha">How many seats in Lok Sabha?</button>
+                    <button class="quick-btn" aria-label="Ask What are the major political parties">What are the major political parties?</button>
+                    <button class="quick-btn" aria-label="Ask How do I register to vote">How do I register to vote?</button>
                 </div>
                 <div class="chat-input-area">
-                    <input type="text" id="chat-input" placeholder="Type your question here...">
-                    <button id="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+                    <input type="text" id="chat-input" placeholder="Type your question here..." aria-label="Chat input field">
+                    <button id="send-btn" class="btn primary-btn" aria-label="Send message"><i class="fa-solid fa-paper-plane"></i></button>
                 </div>
             </div>
         </section>

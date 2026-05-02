@@ -1,12 +1,17 @@
-FROM nginx:alpine
+FROM python:3.11-slim
 
-# Copy all static files to nginx's web root
-COPY . /usr/share/nginx/html
+# Set working directory
+WORKDIR /app
+
+# Copy requirements and install
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy all project files
+COPY . .
 
 # Expose port 8080 for Cloud Run
 EXPOSE 8080
 
-# Configure nginx to listen on port 8080
-RUN sed -i 's/listen       80;/listen       8080;/' /etc/nginx/conf.d/default.conf
-
-CMD ["nginx", "-g", "daemon off;"]
+# Command to run the FastAPI app with Uvicorn on port 8080
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]

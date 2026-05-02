@@ -54,22 +54,10 @@ document.addEventListener('DOMContentLoaded', () => {
         chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
-    // Replace this with your actual Gemini API Key
-    const GEMINI_API_KEY = 'YOUR_GEMINI_API_KEY_HERE';
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+    // API Endpoint for the secure Python backend which handles the multi-model fallback
+    const API_URL = '/api/chat';
 
-    async function fetchGeminiResponse(prompt) {
-        if (GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
-            // Fallback to local bot if API key is not set
-            const lowerInput = prompt.toLowerCase();
-            for (const key in botResponses) {
-                if (key !== 'default' && lowerInput.includes(key)) {
-                    return botResponses[key];
-                }
-            }
-            return "Please configure the Gemini API key in script.js to get real-time answers. For now, I can only answer basic queries about the PM, President, Lok Sabha, and Voting Registration.";
-        }
-
+    async function fetchAIResponse(prompt) {
         try {
             const response = await fetch(API_URL, {
                 method: 'POST',
@@ -77,32 +65,34 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    contents: [{
-                        parts: [{
-                            text: `You are an Indian Election Expert AI Assistant for 'DemocracyGuide'. The user is asking: "${prompt}". Answer concisely, accurately, and politely in 2-3 sentences max.`
-                        }]
-                    }]
+                    prompt: prompt
                 })
             });
 
-            const data = await response.json();
-            
             if (!response.ok) {
-                if (response.status === 429) {
-                    return "Sorry, your Gemini API key has exceeded its quota limit. Please check your billing details or wait a bit before trying again.";
+                // If backend fails or isn't running, fallback to local bot responses
+                const lowerInput = prompt.toLowerCase();
+                for (const key in botResponses) {
+                    if (key !== 'default' && lowerInput.includes(key)) {
+                        return botResponses[key];
+                    }
                 }
-                console.error("API Error:", data);
-                return `API Error: ${data.error?.message || response.statusText}`;
+                return "The secure AI backend seems offline. I am currently running on local fallback mode.";
             }
 
-            if (data.candidates && data.candidates.length > 0) {
-                return data.candidates[0].content.parts[0].text;
-            } else {
-                return "I couldn't fetch an answer right now. Please try again later.";
-            }
+            const data = await response.json();
+            return data.response;
+            
         } catch (error) {
-            console.error('Error fetching from Gemini:', error);
-            return "There was a network error connecting to my AI brain. Please check your internet connection.";
+            console.error('Error fetching from backend:', error);
+            // Fallback to local bot if network error or backend isn't running
+            const lowerInput = prompt.toLowerCase();
+            for (const key in botResponses) {
+                if (key !== 'default' && lowerInput.includes(key)) {
+                    return botResponses[key];
+                }
+            }
+            return "The secure AI backend is unreachable. I am currently running on local fallback mode.";
         }
     }
 
@@ -123,8 +113,8 @@ document.addEventListener('DOMContentLoaded', () => {
         chatWindow.appendChild(typingDiv);
         chatWindow.scrollTop = chatWindow.scrollHeight;
 
-        // Fetch response from Gemini
-        const responseText = await fetchGeminiResponse(text);
+        // Fetch response from backend
+        const responseText = await fetchAIResponse(text);
         
         // Remove typing indicator and add real response
         document.getElementById(typingId).remove();
@@ -154,8 +144,8 @@ document.addEventListener('DOMContentLoaded', () => {
             chatWindow.appendChild(typingDiv);
             chatWindow.scrollTop = chatWindow.scrollHeight;
 
-            // Fetch response from Gemini
-            const responseText = await fetchGeminiResponse(text);
+            // Fetch response from backend
+            const responseText = await fetchAIResponse(text);
             
             // Remove typing indicator and add real response
             document.getElementById(typingId).remove();
