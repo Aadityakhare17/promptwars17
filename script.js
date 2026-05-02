@@ -1,5 +1,9 @@
+'use strict';
+
 document.addEventListener('DOMContentLoaded', () => {
-    // Smooth scrolling for anchor links
+    /**
+     * Smooth scrolling for anchor links to improve navigation UX.
+     */
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
             e.preventDefault();
@@ -43,6 +47,11 @@ document.addEventListener('DOMContentLoaded', () => {
         'default': "That's a great question. While I don't have the specific answer right now, I highly recommend checking the Election Commission of India (ECI) website for the most accurate information. You can ask me about Lok Sabha, Rajya Sabha, upcoming schedules, or the PM!"
     };
 
+    /**
+     * Appends a message to the chat window.
+     * @param {string} text - The message text.
+     * @param {boolean} isUser - True if the message is from the user, false if from the bot.
+     */
     function addMessage(text, isUser = false) {
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('message');
@@ -57,6 +66,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // API Endpoint for the secure Python backend which handles the multi-model fallback
     const API_URL = '/api/chat';
 
+    /**
+     * Fetches the response from the secure AI backend.
+     * Implements local fallback if the backend is unavailable.
+     * @param {string} prompt - The user's input query.
+     * @returns {Promise<string>} The AI response text.
+     */
     async function fetchAIResponse(prompt) {
         try {
             const response = await fetch(API_URL, {
@@ -96,6 +111,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    /**
+     * Handles the process of sending a user message, displaying a loading indicator,
+     * and fetching the corresponding AI response.
+     */
     async function handleSend() {
         const text = chatInput.value.trim();
         if (text === '') return;

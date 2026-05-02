@@ -1,21 +1,22 @@
 import logging
+import os
 from contextlib import asynccontextmanager
+from functools import lru_cache
 
 import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-# Hardcoded API keys as requested
-# Note: In a real production environment, use a secret manager or env vars.
-# #nosec B105
-GEMINI_API_KEY = "AIzaSyCw6nmc1uMYJYaUpg2SdhHFM2jKplzQFRo"
-CLAUDE_API_KEY = "YOUR_CLAUDE_API_KEY"
-OPENAI_API_KEY = "YOUR_OPENAI_API_KEY"
-PERPLEXITY_API_KEY = "YOUR_PERPLEXITY_API_KEY"
-DEEPSEEK_API_KEY = "YOUR_DEEPSEEK_API_KEY"
+# Securely read API keys from environment variables
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+CLAUDE_API_KEY = os.environ.get("CLAUDE_API_KEY", "")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+PERPLEXITY_API_KEY = os.environ.get("PERPLEXITY_API_KEY", "")
+DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -34,14 +35,26 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="DemocracyGuide AI Backend", lifespan=lifespan)
 
+# Efficiency: GZip compression for responses
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
 # Security: CORS configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["POST"],
+    allow_methods=["POST", "GET", "OPTIONS"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    """Add strict security headers to all responses."""
+    response = await call_next(request)
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    return response
 
 
 class ChatRequest(BaseModel):
@@ -176,12 +189,26 @@ async def call_deepseek(prompt: str) -> str:
     return response.json()["choices"][0]["message"]["content"]
 
 
+import html
+
+# Simple memory cache for identical requests
+RESPONSE_CACHE = {}
+
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
     """
     Handle chat requests and implement a fallback cascade strategy.
     Tries Gemini -> Claude -> OpenAI -> Perplexity -> DeepSeek.
+    Includes simple caching and sanitization.
     """
+    # Security: Sanitize input
+    sanitized_prompt = html.escape(request.prompt.strip())
+    
+    # Efficiency: Cache check
+    if sanitized_prompt in RESPONSE_CACHE:
+        logger.info("Cache hit for prompt")
+        return ChatResponse(response=RESPONSE_CACHE[sanitized_prompt])
+
     providers = [
         call_gemini,
         call_claude,
@@ -191,11 +218,19 @@ async def chat_endpoint(request: ChatRequest):
     ]
 
     for provider in providers:
+        if not GEMINI_API_KEY and provider == call_gemini:
+            continue # Skip if no key
         try:
             # We await the async provider functions
-            response_text = await provider(request.prompt)
+            response_text = await provider(sanitized_prompt)
             logger.info("Successfully fetched response from %s",
                         provider.__name__)
+            
+            # Save to cache (limit size to prevent memory leak)
+            if len(RESPONSE_CACHE) > 1000:
+                RESPONSE_CACHE.clear()
+            RESPONSE_CACHE[sanitized_prompt] = response_text
+            
             return ChatResponse(response=response_text)
         except httpx.HTTPStatusError as e:
             logger.warning("Provider %s HTTP error: %s", provider.__name__, e)
